@@ -7,7 +7,13 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <canvas id="ballCanvas"></canvas>
+    <div class="container">
+        <h1>Amiga Bouncing Ball</h1>
+        <canvas id="ballCanvas"></canvas>
+        <div class="controls">
+            <button onclick="changeBallColor()">Change Color</button>
+        </div>
+    </div>
     <script>
         const canvas = document.getElementById('ballCanvas');
         const ctx = canvas.getContext('2d');
@@ -24,15 +30,43 @@
             dx: 4,
             dy: 2,
             gravity: 0.2,
-            bounce: 0.85
+            bounce: 0.85,
+            color: 'red'
         };
         
+        // Array of possible colors
+        const colors = ['red', 'blue', 'green', 'purple', 'orange'];
+        
+        function changeBallColor() {
+            const currentIndex = colors.indexOf(ball.color);
+            const nextIndex = (currentIndex + 1) % colors.length;
+            ball.color = colors[nextIndex];
+        }
+        
         function drawBall() {
+            // Draw shadow
+            ctx.beginPath();
+            ctx.ellipse(ball.x, canvas.height - 10, ball.radius * 1.2, ball.radius * 0.25, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.fill();
+            
+            // Draw ball with gradient
+            const gradient = ctx.createRadialGradient(
+                ball.x - ball.radius * 0.3,
+                ball.y - ball.radius * 0.3,
+                ball.radius * 0.1,
+                ball.x,
+                ball.y,
+                ball.radius
+            );
+            gradient.addColorStop(0, '#fff');
+            gradient.addColorStop(0.2, ball.color);
+            gradient.addColorStop(1, '#000');
+            
             ctx.beginPath();
             ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-            ctx.fillStyle = 'red';
+            ctx.fillStyle = gradient;
             ctx.fill();
-            ctx.closePath();
         }
         
         function update() {
