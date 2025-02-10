@@ -26,12 +26,14 @@
         const ball = {
             x: 100,
             y: 100,
-            radius: 40, // Doubled size
+            radius: 40,
             dx: 4,
             dy: 2,
             gravity: 0.2,
-            bounce: 0.95, // Increased bounciness
-            color: 'red'
+            bounce: 0.95,
+            color: 'red',
+            rotation: 0,
+            rotationSpeed: 0.05 // Speed of rotation
         };
         
         // Array of possible colors
@@ -53,15 +55,19 @@
             // Save context state
             ctx.save();
             
+            // Move to ball center and rotate
+            ctx.translate(ball.x, ball.y);
+            ctx.rotate(ball.rotation);
+            
             // Create clipping region for the ball
             ctx.beginPath();
-            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
             ctx.clip();
             
             // Draw checkered pattern
             const squareSize = ball.radius * 0.5;
-            const startX = ball.x - ball.radius;
-            const startY = ball.y - ball.radius;
+            const startX = -ball.radius;
+            const startY = -ball.radius;
             const numSquares = Math.ceil(ball.radius * 2 / squareSize);
             
             for (let i = 0; i < numSquares; i++) {
@@ -80,15 +86,15 @@
                 }
             }
             
-            // Restore context state
-            ctx.restore();
-            
             // Draw ball outline
             ctx.beginPath();
-            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 2;
             ctx.stroke();
+            
+            // Restore context state
+            ctx.restore();
         }
         
         function update() {
@@ -98,6 +104,11 @@
             ball.dy += ball.gravity;
             ball.x += ball.dx;
             ball.y += ball.dy;
+            
+            // Update rotation
+            ball.rotation += ball.rotationSpeed;
+            // Update rotation speed based on horizontal movement
+            ball.rotationSpeed = ball.dx * 0.02;
             
             // Bounce off walls
             if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
