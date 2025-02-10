@@ -12,6 +12,7 @@
         <canvas id="ballCanvas"></canvas>
         <div class="controls">
             <button onclick="changeBallColor()">Change Color</button>
+            <button onclick="restartAnimation()">Restart</button>
         </div>
     </div>
     <script>
@@ -22,8 +23,8 @@
         canvas.width = 800;
         canvas.height = 600;
         
-        // Ball properties
-        const ball = {
+        // Initial ball properties
+        const initialState = {
             x: 100,
             y: 100,
             radius: 40,
@@ -33,11 +34,21 @@
             bounce: 0.95,
             color: 'red',
             rotation: 0,
-            rotationSpeed: 0.05 // Speed of rotation
+            rotationX: 0,
+            rotationY: 0,
+            rotationSpeed: 0.05,
+            squashFactor: 1
         };
+        
+        // Current ball state
+        const ball = { ...initialState };
         
         // Array of possible colors
         const colors = ['red', 'blue', 'green', 'purple', 'orange'];
+        
+        function restartAnimation() {
+            Object.assign(ball, initialState);
+        }
         
         function changeBallColor() {
             const currentIndex = colors.indexOf(ball.color);
@@ -47,35 +58,54 @@
         
         function drawCheckeredBall() {
             // Draw shadow
+            const shadowSquash = 0.25 + (ball.squashFactor - 1) * 0.1;
             ctx.beginPath();
-            ctx.ellipse(ball.x, canvas.height - 10, ball.radius * 1.2, ball.radius * 0.25, 0, 0, Math.PI * 2);
+            ctx.ellipse(ball.x, canvas.height - 10, 
+                       ball.radius * 1.2, 
+                       ball.radius * shadowSquash, 
+                       0, 0, Math.PI * 2);
             ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
             ctx.fill();
             
             // Save context state
             ctx.save();
             
-            // Move to ball center and rotate
+            // Move to ball center
             ctx.translate(ball.x, ball.y);
+            
+            // Apply rotations
             ctx.rotate(ball.rotation);
+            
+            // Apply 3D perspective squash effect
+            ctx.scale(1, ball.squashFactor);
             
             // Create clipping region for the ball
             ctx.beginPath();
             ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
             ctx.clip();
             
-            // Draw checkered pattern
+            // Draw checkered pattern with 3D effect
             const squareSize = ball.radius * 0.5;
             const startX = -ball.radius;
             const startY = -ball.radius;
             const numSquares = Math.ceil(ball.radius * 2 / squareSize);
             
+            // Calculate lighting based on rotation
+            const lightAngle = (ball.rotationX + ball.rotationY) % (Math.PI * 2);
+            const lightIntensity = (Math.cos(lightAngle) + 1) * 0.5;
+            
             for (let i = 0; i < numSquares; i++) {
                 for (let j = 0; j < numSquares; j++) {
                     if ((i + j) % 2 === 0) {
-                        ctx.fillStyle = ball.color;
+                        // Create darker/lighter version of the ball color based on position and rotation
+                        const color = ball.color;
+                        const shade = ((i - numSquares/2) * Math.cos(ball.rotationX) + 
+                                     (j - numSquares/2) * Math.cos(ball.rotationY)) * 0.1;
+                        ctx.fillStyle = adjustColor(color, lightIntensity + shade);
                     } else {
-                        ctx.fillStyle = '#ffffff';
+                        // Create shaded white squares
+                        const brightness = Math.max(0.7, lightIntensity);
+                        ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
                     }
                     ctx.fillRect(
                         startX + i * squareSize,
@@ -86,7 +116,7 @@
                 }
             }
             
-            // Draw ball outline
+            // Draw ball outline with perspective
             ctx.beginPath();
             ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
             ctx.strokeStyle = '#000000';
@@ -97,6 +127,19 @@
             ctx.restore();
         }
         
+        function adjustColor(color, factor) {
+            // Convert color names to RGB
+            const tempDiv = document.createElement('div');
+            tempDiv.style.color = color;
+            document.body.appendChild(tempDiv);
+            const rgbStr = window.getComputedStyle(tempDiv).color;
+            document.body.removeChild(tempDiv);
+            
+            const rgb = rgbStr.match(/\d+/g).map(Number);
+            const adjusted = rgb.map(c => Math.min(255, Math.max(0, Math.round(c * factor))));
+            return `rgb(${adjusted.join(',')})`;
+        }
+        
         function update() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
@@ -105,20 +148,27 @@
             ball.x += ball.dx;
             ball.y += ball.dy;
             
-            // Update rotation
+            // Update rotations
             ball.rotation += ball.rotationSpeed;
-            // Update rotation speed based on horizontal movement
-            ball.rotationSpeed = ball.dx * 0.02;
+            ball.rotationX += ball.dx * 0.02;
+            ball.rotationY += ball.dy * 0.02;
+            
+            // Calculate squash factor based on vertical speed
+            const verticalSpeed = Math.abs(ball.dy);
+            ball.squashFactor = 1 + (verticalSpeed * 0.02);
             
             // Bounce off walls
             if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
                 ball.dx = -ball.dx * ball.bounce;
+                ball.rotationSpeed = -ball.rotationSpeed; // Reverse spin
             }
             
             // Bounce off floor/ceiling
             if (ball.y + ball.radius > canvas.height) {
                 ball.y = canvas.height - ball.radius;
                 ball.dy = -ball.dy * ball.bounce;
+                // Extra squash on impact
+                ball.squashFactor = 1 + Math.abs(ball.dy) * 0.05;
             } else if (ball.y - ball.radius < 0) {
                 ball.y = ball.radius;
                 ball.dy = -ball.dy * ball.bounce;
