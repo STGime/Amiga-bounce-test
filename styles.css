@@ -7,6 +7,20 @@ body {
     min-height: 100vh;
     background: linear-gradient(to bottom, #1a1a1a, #4a4a4a);
     overflow: hidden;
+    font-family: 'Arial', sans-serif;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+h1 {
+    color: #fff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    margin: 0;
 }
 
 #ballCanvas {
@@ -14,4 +28,28 @@ body {
     border: 2px solid #666;
     border-radius: 8px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+}
+
+button {
+    background: linear-gradient(to bottom, #666, #444);
+    border: none;
+    border-radius: 4px;
+    color: white;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s;
+}
+
+button:hover {
+    background: linear-gradient(to bottom, #777, #555);
+}
+
+button:active {
+    background: linear-gradient(to bottom, #555, #333);
 }
