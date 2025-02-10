@@ -7,7 +7,13 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <canvas id="ballCanvas"></canvas>
+    <div class="container">
+        <h1>Amiga Bouncing Ball</h1>
+        <canvas id="ballCanvas"></canvas>
+        <div class="controls">
+            <button onclick="changeBallColor()">Change Color</button>
+        </div>
+    </div>
     <script>
         const canvas = document.getElementById('ballCanvas');
         const ctx = canvas.getContext('2d');
@@ -20,19 +26,69 @@
         const ball = {
             x: 100,
             y: 100,
-            radius: 20,
+            radius: 40, // Doubled size
             dx: 4,
             dy: 2,
             gravity: 0.2,
-            bounce: 0.85
+            bounce: 0.95, // Increased bounciness
+            color: 'red'
         };
         
-        function drawBall() {
+        // Array of possible colors
+        const colors = ['red', 'blue', 'green', 'purple', 'orange'];
+        
+        function changeBallColor() {
+            const currentIndex = colors.indexOf(ball.color);
+            const nextIndex = (currentIndex + 1) % colors.length;
+            ball.color = colors[nextIndex];
+        }
+        
+        function drawCheckeredBall() {
+            // Draw shadow
+            ctx.beginPath();
+            ctx.ellipse(ball.x, canvas.height - 10, ball.radius * 1.2, ball.radius * 0.25, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.fill();
+            
+            // Save context state
+            ctx.save();
+            
+            // Create clipping region for the ball
             ctx.beginPath();
             ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-            ctx.fillStyle = 'red';
-            ctx.fill();
-            ctx.closePath();
+            ctx.clip();
+            
+            // Draw checkered pattern
+            const squareSize = ball.radius * 0.5;
+            const startX = ball.x - ball.radius;
+            const startY = ball.y - ball.radius;
+            const numSquares = Math.ceil(ball.radius * 2 / squareSize);
+            
+            for (let i = 0; i < numSquares; i++) {
+                for (let j = 0; j < numSquares; j++) {
+                    if ((i + j) % 2 === 0) {
+                        ctx.fillStyle = ball.color;
+                    } else {
+                        ctx.fillStyle = '#ffffff';
+                    }
+                    ctx.fillRect(
+                        startX + i * squareSize,
+                        startY + j * squareSize,
+                        squareSize,
+                        squareSize
+                    );
+                }
+            }
+            
+            // Restore context state
+            ctx.restore();
+            
+            // Draw ball outline
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
         }
         
         function update() {
@@ -57,7 +113,7 @@
                 ball.dy = -ball.dy * ball.bounce;
             }
             
-            drawBall();
+            drawCheckeredBall();
             requestAnimationFrame(update);
         }
         
