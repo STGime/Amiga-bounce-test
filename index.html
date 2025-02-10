@@ -19,11 +19,9 @@
         const canvas = document.getElementById('ballCanvas');
         const ctx = canvas.getContext('2d');
         
-        // Set canvas size
         canvas.width = 800;
         canvas.height = 600;
         
-        // Initial ball properties
         const initialState = {
             x: 100,
             y: 100,
@@ -34,20 +32,16 @@
             bounce: 0.95,
             color: 'red',
             rotation: 0,
-            rotationX: 0,
-            rotationY: 0,
             rotationSpeed: 0.05,
             squashFactor: 1
         };
         
-        // Current ball state
         const ball = { ...initialState };
         
-        // Array of possible colors
         const colors = ['red', 'blue', 'green', 'purple', 'orange'];
         
         function restartAnimation() {
-            Object.assign(ball, initialState);
+            Object.assign(ball, { ...initialState });
         }
         
         function changeBallColor() {
@@ -70,13 +64,9 @@
             // Save context state
             ctx.save();
             
-            // Move to ball center
+            // Move to ball center and apply transformations
             ctx.translate(ball.x, ball.y);
-            
-            // Apply rotations
             ctx.rotate(ball.rotation);
-            
-            // Apply 3D perspective squash effect
             ctx.scale(1, ball.squashFactor);
             
             // Create clipping region for the ball
@@ -84,29 +74,23 @@
             ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
             ctx.clip();
             
-            // Draw checkered pattern with 3D effect
+            // Draw checkered pattern
             const squareSize = ball.radius * 0.5;
             const startX = -ball.radius;
             const startY = -ball.radius;
             const numSquares = Math.ceil(ball.radius * 2 / squareSize);
             
-            // Calculate lighting based on rotation
-            const lightAngle = (ball.rotationX + ball.rotationY) % (Math.PI * 2);
-            const lightIntensity = (Math.cos(lightAngle) + 1) * 0.5;
-            
             for (let i = 0; i < numSquares; i++) {
                 for (let j = 0; j < numSquares; j++) {
+                    // Add depth effect based on rotation
+                    const depth = Math.sin(ball.rotation + (i + j) * 0.5) * 0.3 + 0.7;
+                    
                     if ((i + j) % 2 === 0) {
-                        // Create darker/lighter version of the ball color based on position and rotation
-                        const color = ball.color;
-                        const shade = ((i - numSquares/2) * Math.cos(ball.rotationX) + 
-                                     (j - numSquares/2) * Math.cos(ball.rotationY)) * 0.1;
-                        ctx.fillStyle = adjustColor(color, lightIntensity + shade);
+                        ctx.fillStyle = ball.color;
                     } else {
-                        // Create shaded white squares
-                        const brightness = Math.max(0.7, lightIntensity);
-                        ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+                        ctx.fillStyle = `rgba(255, 255, 255, ${depth})`;
                     }
+                    
                     ctx.fillRect(
                         startX + i * squareSize,
                         startY + j * squareSize,
@@ -116,7 +100,7 @@
                 }
             }
             
-            // Draw ball outline with perspective
+            // Draw ball outline
             ctx.beginPath();
             ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
             ctx.strokeStyle = '#000000';
@@ -127,19 +111,6 @@
             ctx.restore();
         }
         
-        function adjustColor(color, factor) {
-            // Convert color names to RGB
-            const tempDiv = document.createElement('div');
-            tempDiv.style.color = color;
-            document.body.appendChild(tempDiv);
-            const rgbStr = window.getComputedStyle(tempDiv).color;
-            document.body.removeChild(tempDiv);
-            
-            const rgb = rgbStr.match(/\d+/g).map(Number);
-            const adjusted = rgb.map(c => Math.min(255, Math.max(0, Math.round(c * factor))));
-            return `rgb(${adjusted.join(',')})`;
-        }
-        
         function update() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
@@ -148,10 +119,8 @@
             ball.x += ball.dx;
             ball.y += ball.dy;
             
-            // Update rotations
-            ball.rotation += ball.rotationSpeed;
-            ball.rotationX += ball.dx * 0.02;
-            ball.rotationY += ball.dy * 0.02;
+            // Update rotation based on movement
+            ball.rotation += ball.dx * 0.05;
             
             // Calculate squash factor based on vertical speed
             const verticalSpeed = Math.abs(ball.dy);
@@ -160,7 +129,12 @@
             // Bounce off walls
             if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
                 ball.dx = -ball.dx * ball.bounce;
-                ball.rotationSpeed = -ball.rotationSpeed; // Reverse spin
+                ball.rotationSpeed = -ball.rotationSpeed;
+                if (ball.x + ball.radius > canvas.width) {
+                    ball.x = canvas.width - ball.radius;
+                } else {
+                    ball.x = ball.radius;
+                }
             }
             
             // Bounce off floor/ceiling
